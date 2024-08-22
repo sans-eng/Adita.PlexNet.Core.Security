@@ -44,6 +44,10 @@ namespace Adita.PlexNet.Core.Security.Authorization
 
             if (attribute is AuthorizeAttribute authorizeAttribute)
             {
+                if(Thread.CurrentPrincipal?.Identity?.IsAuthenticated == false)
+                {
+                    return false;
+                }
 
                 if (string.IsNullOrWhiteSpace(authorizeAttribute.Roles) && Thread.CurrentPrincipal?.Identity?.IsAuthenticated == true)
                 {
@@ -80,6 +84,11 @@ namespace Adita.PlexNet.Core.Security.Authorization
 
             if (attribute is AuthorizeAttribute authorizeAttribute)
             {
+                if (Thread.CurrentPrincipal?.Identity?.IsAuthenticated == false)
+                {
+                    return false;
+                }
+
                 if (string.IsNullOrWhiteSpace(authorizeAttribute.Roles) && Thread.CurrentPrincipal?.Identity?.IsAuthenticated == true)
                 {
                     return true;

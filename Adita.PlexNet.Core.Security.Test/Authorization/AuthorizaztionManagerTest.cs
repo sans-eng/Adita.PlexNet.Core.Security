@@ -1,6 +1,7 @@
 ﻿using Adita.PlexNet.Core.Security.Authorization;
 using Adita.PlexNet.Core.Security.Claims;
 using Adita.PlexNet.Core.Security.Principals;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Security.Claims;
 
 namespace Adita.PlexNet.Core.Security.Test.Authorization
@@ -15,20 +16,22 @@ namespace Adita.PlexNet.Core.Security.Test.Authorization
         [Authorize]
         public int Resource3 { get; }
 
-        [ClassInitialize]
-        public static void Initialize(TestContext context)
+
+        private void InitializePrincipal()
         {
             ApplicationIdentity applicationIdentity = new(new List<Claim> { new Claim(ClaimTypes.Name, "Adi"), new Claim(ClaimTypes.Role, "admin") }, "password");
-
-            ApplicationPrincipal applicationPrincipal = new(applicationIdentity);
-
-            AppDomain.CurrentDomain.SetThreadPrincipal(applicationPrincipal);
+            Thread.CurrentPrincipal = new ApplicationPrincipal(applicationIdentity);
+        }
+        private void InitializeAnonymousPrincipal()
+        {
+            Thread.CurrentPrincipal = new ApplicationPrincipal(new ApplicationIdentity());
         }
 
         [TestMethod]
         [Authorize("admin")]
         public void CanAcceptPermission()
         {
+            InitializePrincipal();
             AuthorizationManager authorizationManager = new();
             Assert.IsTrue(authorizationManager.CheckPermission());
         }
@@ -37,6 +40,7 @@ namespace Adita.PlexNet.Core.Security.Test.Authorization
         [Authorize]
         public void CanAcceptPermissionEmptyRoles()
         {
+            InitializePrincipal();
             AuthorizationManager authorizationManager = new();
             Assert.IsTrue(authorizationManager.CheckPermission());
         }
@@ -45,6 +49,7 @@ namespace Adita.PlexNet.Core.Security.Test.Authorization
         [Authorize("user")]
         public void CanRefusePermission()
         {
+            InitializePrincipal();
             AuthorizationManager authorizationManager = new();
             Assert.IsFalse(authorizationManager.CheckPermission());
         }
@@ -52,6 +57,7 @@ namespace Adita.PlexNet.Core.Security.Test.Authorization
         [TestMethod]
         public void CanAcceptResourcePermission()
         {
+            InitializePrincipal();
             AuthorizationManager authorizationManager = new();
             Assert.IsTrue(authorizationManager.HasPermission<AuthorizaztionManagerTest>(nameof(Resource1)));
         }
@@ -59,6 +65,7 @@ namespace Adita.PlexNet.Core.Security.Test.Authorization
         [TestMethod]
         public void CanAcceptResourcePermissionEmptyRoles()
         {
+            InitializePrincipal();
             AuthorizationManager authorizationManager = new();
             Assert.IsTrue(authorizationManager.HasPermission<AuthorizaztionManagerTest>(nameof(Resource3)));
         }
@@ -66,6 +73,7 @@ namespace Adita.PlexNet.Core.Security.Test.Authorization
         [TestMethod]
         public void CanRefuseResourcePermission()
         {
+            InitializePrincipal();
             AuthorizationManager authorizationManager = new();
             Assert.IsFalse(authorizationManager.HasPermission<AuthorizaztionManagerTest>(nameof(Resource2)));
         }
@@ -73,14 +81,25 @@ namespace Adita.PlexNet.Core.Security.Test.Authorization
         [TestMethod]
         public void CanAcceptRole()
         {
+            InitializePrincipal();
             AuthorizationManager authorizationManager = new();
             Assert.IsTrue(authorizationManager.IsInRole("admin"));
         }
         [TestMethod]
         public void CanRefuseRole()
         {
+            InitializePrincipal();
             AuthorizationManager authorizationManager = new();
             Assert.IsFalse(authorizationManager.IsInRole("user"));
+        }
+
+        [TestMethod]
+        [Authorize]
+        public void CanRefuseIfNotAuthenticated()
+        {
+            InitializeAnonymousPrincipal();
+            AuthorizationManager authorizationManager = new();
+            Assert.IsFalse(authorizationManager.CheckPermission());
         }
     }
 }
